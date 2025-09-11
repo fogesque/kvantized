@@ -18,6 +18,17 @@ func main() {
 		log.Fatal("Missing required environment variables")
 	}
 
+	// Get schedule details from environment variables
+	pWp := os.Getenv("P_WP")
+	aWpEven := os.Getenv("A_WP_EVEN")
+	aWpOdd := os.Getenv("A_WP_ODD")
+	kWpEven := os.Getenv("B_WP_EVEN")
+	kWpOdd := os.Getenv("B_WP_ODD")
+
+	if pWp == "" || aWpEven == "" || aWpOdd == "" || kWpEven == "" || kWpOdd == "" {
+		log.Fatal("Missing required schedule environment variables")
+	}
+
 	// Create bot instance
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
@@ -27,11 +38,25 @@ func main() {
 	// Get current week number (ISO 8601)
 	year, week := time.Now().ISOWeek()
 
+	// Determine the current week's schedule
+	var aWP, kWP string
+	if week%2 == 0 {
+		aWP = aWpEven
+		kWP = kWpEven
+	} else {
+		aWP = aWpOdd
+		kWP = kWpOdd
+	}
+
 	// Format the message
 	message := fmt.Sprintf(
 		"📅 *Неделя %d, год %d*\n\n"+
-			"_это_автоматическое_сообщение_",
+			"График на эту неделю:\n"+
+			"P - %s\n"+
+			"A - %s\n"+
+			"K - %s\n",
 		week, year,
+		pWp, aWP, kWP,
 	)
 
 	// Create message config
