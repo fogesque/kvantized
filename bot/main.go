@@ -22,8 +22,8 @@ func main() {
 	pWp := os.Getenv("P_WP")
 	aWpEven := os.Getenv("A_WP_EVEN")
 	aWpOdd := os.Getenv("A_WP_ODD")
-	kWpEven := os.Getenv("B_WP_EVEN")
-	kWpOdd := os.Getenv("B_WP_ODD")
+	kWpEven := os.Getenv("K_WP_EVEN")
+	kWpOdd := os.Getenv("K_WP_ODD")
 
 	if pWp == "" || aWpEven == "" || aWpOdd == "" || kWpEven == "" || kWpOdd == "" {
 		log.Fatal("Missing required schedule environment variables")
