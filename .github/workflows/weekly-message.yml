@@ -23,10 +23,10 @@ jobs:
         go-version: '1.21'
     
     - name: Install dependencies
-      run: go mod download
+      run: cd bot && go mod download
     
     - name: Run bot
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-      run: go run main.go
+      run: cd bot && go run main.go
