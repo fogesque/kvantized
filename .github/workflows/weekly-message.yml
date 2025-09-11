@@ -29,4 +29,9 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+        P_WP: ${{ secrets.P_WP }}
+        A_WP_EVEN: ${{ secrets.A_WP_EVEN }}
+        A_WP_ODD: ${{ secrets.A_WP_ODD }}
+        B_WP_EVEN: ${{ secrets.B_WP_EVEN }}
+        B_WP_ODD: ${{ secrets.B_WP_ODD }}
       run: cd bot && go run main.go
