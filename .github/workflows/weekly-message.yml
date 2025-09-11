@@ -32,6 +32,6 @@ jobs:
         P_WP: ${{ secrets.P_WP }}
         A_WP_EVEN: ${{ secrets.A_WP_EVEN }}
         A_WP_ODD: ${{ secrets.A_WP_ODD }}
-        B_WP_EVEN: ${{ secrets.B_WP_EVEN }}
-        B_WP_ODD: ${{ secrets.B_WP_ODD }}
+        K_WP_EVEN: ${{ secrets.K_WP_EVEN }}
+        K_WP_ODD: ${{ secrets.K_WP_ODD }}
       run: cd bot && go run main.go
