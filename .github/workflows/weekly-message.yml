@@ -1,0 +1,32 @@
+name: Weekly Telegram Message
+
+on:
+  schedule:
+    # Runs every Monday at 9:00 AM UTC
+    # Adjust the time based on your timezone
+    - cron: '0 9 * * 1'
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  send-message:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Install dependencies
+      run: go mod download
+    
+    - name: Run bot
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+      run: go run main.go
