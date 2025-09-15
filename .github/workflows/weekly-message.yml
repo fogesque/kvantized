@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs every Monday at 9:00 AM UTC
     # Adjust the time based on your timezone
-    - cron: '0 9 * * 1'
+    - cron: '0 6 * * 1'
   
   # Allow manual trigger for testing
   workflow_dispatch:
