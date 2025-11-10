@@ -9,7 +9,7 @@ BasedOnStyle: Google
 Language: Cpp
 
 # Standard version (c++03, c++11, c++14, c++17, c++20, Latest, Auto)
-Standard: c++17
+Standard: c++23
 
 #===============================================================================
 # INDENTATION AND SPACING
@@ -90,7 +90,7 @@ RemoveBracesLLVM: false
 #===============================================================================
 
 # Maximum line length (0 = no limit)
-ColumnLimit: 80
+ColumnLimit: 120
 
 # How to handle lines that exceed ColumnLimit
 # None: don't break, PenaltyBased: break with penalties, Always: always break
@@ -268,7 +268,7 @@ AlignTrailingComments: true
 
 # Align array of structures initialization
 # Left, Right, None
-AlignArrayOfStructures: None
+AlignArrayOfStructures: Left
 
 # Align escaped newlines (backslashes in macros)
 # DontAlign, Left, Right
