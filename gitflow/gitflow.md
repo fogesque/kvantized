@@ -21,21 +21,21 @@ All branches should start with a specific prefix followed by a descriptive, lowe
 
 * **Feature Branches:**
     * **Prefix:** `feature/`
-    * **Format:** `feature/<issue-id>-<short-description>`
-    * **Examples:** `feature/kanon-69-network-module`, `feature/kanon-666-api-endpoint-for-control`
+    * **Format:** `feature/<short-description>`
+    * **Examples:** `feature/user-profile-page`, `feature/add-api-endpoint-for-products`
     * **Purpose:** Developed from `develop`. Merged back into `develop`.
 
 * **Hotfix Branches:**
     * **Prefix:** `hotfix/`
-    * **Format:** `hotfix/<issue-id>-<short-description>`
-    * **Examples:** `hotfix/kanon-69-fix-conn-error`, `hotfix/kanon-666-patch-security-vulnerability`
+    * **Format:** `hotfix/<short-description>`
+    * **Examples:** `hotfix/fix-login-error`, `hotfix/patch-security-vulnerability`
     * **Purpose:** Developed from `develop`. Merged back into `develop`.
 
-* **Temporary/Experiment Branches:**
+* **Temporary/Experiment Branches (for personal use):**
     * **Prefix:** `tmp/` or `exp/`
     * **Format:** `tmp/<your-name>-<description>`
     * **Examples:** `tmp/john-test-branch`, `exp/jane-api-experiment`
-    * **Purpose:** For quick tests or experiments. These branches should be short-lived and deleted once their purpose is served.
+    * **Purpose:** For quick tests or experiments. These branches should be short-lived and deleted once their purpose is served. Not typically used for PRs to `develop` or `main`.
 
 ---
 
@@ -50,10 +50,10 @@ All branches should start with a specific prefix followed by a descriptive, lowe
 2.  **Create a New Branch:** Based on the type of work you're doing, create a new branch from `develop` (for features) or `main` (for hotfixes).
     ```bash
     # For a new feature
-    git checkout -b feature/<issue-id>-<your-feature-description> develop
+    git checkout -b feature/your-feature-description develop
 
     # For a hotfix
-    git checkout -b hotfix/<issue-id>-<your-hotfix-description> main
+    git checkout -b hotfix/your-hotfix-description main
     ```
 
 3.  **Develop and Commit Regularly:** Make small, logical commits with clear and concise commit messages.
@@ -64,8 +64,8 @@ All branches should start with a specific prefix followed by a descriptive, lowe
         * **Subject:** Concise description of the change.
 
     * **Examples:**
-        * `KANON-69: Add driver loading method`
-        * `KANON-666: Fix driver loading error`
+        * `[AK-4] Add driver loading method`
+        * `[AK-8] Fix driver loading error`
 
 4.  **Run Formatter and Linter:** Before committing, always run the configured code formatter and linter. This ensures code consistency and catches potential issues early.
 
@@ -86,7 +86,7 @@ All branches should start with a specific prefix followed by a descriptive, lowe
 
 Once your feature or hotfix is complete and thoroughly tested on your local machine, it's time to open a Pull Request.
 
-1.  **Rebase:** Before creating a PR, consider rebasing your feature branch onto the latest `develop`. This keeps your commit history linear and clean.
+1.  **Rebase (Optional, but Recommended for clean history):** Before creating a PR, consider rebasing your feature branch onto the latest `develop` (or `main` for hotfixes). This keeps your commit history linear and clean.
     ```bash
     # From your feature branch
     git checkout develop
@@ -105,22 +105,22 @@ Once your feature or hotfix is complete and thoroughly tested on your local mach
     * Alternatively, go to "Merge Requests" on the left sidebar and click "New merge request".
 
 4.  **Configure the Pull Request:**
-    * **Source Branch:** Select your branch (`feature/<issue-id>-<your-feature-description>` or `hotfix/<issue-id>-<your-hotfix-description>`).
+    * **Source Branch:** Select your feature/hotfix branch (`feature/-your-feature-description` or `hotfix/your-hotfix-description`).
     * **Target Branch:**
         * For `feature/` branches: `develop`
-        * For `hotfix/` branches: `main`
+        * For `hotfix/` branches: `develop`
 
 5.  **Title and Description:**
     * **Title:** A concise summary of the PR's purpose (often similar to your main commit message).
     * **Description:**
         * Clearly explain what the PR does, why it's needed, and how it addresses the associated issue.
-        * Reference the relevant issue tracker ID (e.g., `#KANON-69`).
+        * Reference the relevant issue tracker ID (e.g., `#PROJ-123`).
         * Include any necessary context, screenshots, or videos.
         * Mention any specific areas to review.
 
 6.  **Assign Reviewers:** Assign at least one reviewer from the team.
 
-7.  **Add Labels:** Add relevant labels (e.g., `feature`, `bug`, `frontend`, `backend`).
+7.  **Add Labels (Optional but recommended):** Add relevant labels (e.g., `feature`, `bug`, `frontend`, `backend`).
 
 8.  **Submit Pull Request:** Click "Create merge request."
 
@@ -131,7 +131,7 @@ Once your feature or hotfix is complete and thoroughly tested on your local mach
 1.  **Respond to Feedback:** Be responsive to comments and suggestions from reviewers. Engage in constructive discussions.
 2.  **Make Changes:** Make necessary changes on your branch, commit them, and push them. The PR will automatically update.
 3.  **Address All Comments:** Ensure all comments are addressed or clarified before the PR is merged.
-4.  **Approve and Merge:** Once the PR has received the required approvals and all checks (CI/CD) pass, the reviewer will merge the PR.
+4.  **Approve and Merge:** Once the PR has received the required approvals and all checks (CI/CD) pass, the reviewer (or an authorized team lead) will merge the PR.
 
 ---
 
