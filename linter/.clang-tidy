@@ -1,181 +1,308 @@
+# =============================================================================
+# clang-tidy configuration
+# Based on Google style with project-specific overrides from CODESTYLE.md
+# =============================================================================
 
-# This is a basic .clang-tidy configuration file.
-# It enables a variety of checks to enforce modern C++ practices,
-# find common bugs, and improve code readability.
-#
-# For a full list of available checks, you can run:
-# clang-tidy -list-checks -checks='*'
+# -----------------------------------------------------------------------------
+# Enabled checks
+# -----------------------------------------------------------------------------
+# Base: Google checks
+# Additional: bugprone, performance, cppcoreguidelines, cert, clang-analyzer,
+#             readability, modernize, misc
+# Project overrides from CODESTYLE.md take priority over Google defaults
+# -----------------------------------------------------------------------------
+
 Checks: >
-  '-*,
+  -*,
   bugprone-*,
-  -bugprone-exception-escape,
   cert-*,
   clang-analyzer-*,
-  clang-diagnostic-*,
   cppcoreguidelines-*,
   google-*,
-  hicpp-*,
-  llvm-*,
   misc-*,
   modernize-*,
-  -modernize-concat-nested-namespaces,
-  -modernize-use-trailing-return-type,
   performance-*,
-  portability-*,
-  -portability-template-virtual-member-function,
   readability-*,
+  -modernize-use-trailing-return-type,
+  -google-readability-todo,
+  -readability-else-after-return,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -google-build-using-namespace,
+  -modernize-avoid-c-arrays,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-prefer-member-initializer,
+  -misc-include-cleaner,
+  -cert-env33-c
 
+WarningsAsErrors: >
+  readability-braces-around-statements,
+  readability-magic-numbers,
+  readability-identifier-naming,
+  readability-function-size,
+  modernize-use-auto,
+  modernize-loop-convert,
+  modernize-make-shared,
+  modernize-make-unique,
+  bugprone-exception-escape,
+  misc-const-correctness
 
-WarningsAsErrors: '*' # Treat specified warnings as errors.
+HeaderFilterRegex: '.*\.hpp$'
 
-HeaderFilterRegex: '.*' # Analyze headers as well as source files.
-FormatStyle: file  # Use .clang-format file
-InheritParentConfig: true # Inherit configurations from parent directories.
+FormatStyle: file
 
+# =============================================================================
+# Check options
+# =============================================================================
 
 CheckOptions:
-  # This section provides fine-grained control over the behavior of specific checks.
-  # You can uncomment and customize these options to match your team's style guide.
+  # ---------------------------------------------------------------------------
+  # CS-02: readability-magic-numbers
+  # Only 0 and 1 are allowed without naming (strictest mode)
+  # ---------------------------------------------------------------------------
+  - key: readability-magic-numbers.IgnoredIntegerValues
+    value: '0;1'
+  - key: readability-magic-numbers.IgnoredFloatingPointValues
+    value: '0.0;1.0'
+  - key: readability-magic-numbers.IgnoreAllFloatingPointValues
+    value: 'false'
+  - key: readability-magic-numbers.IgnoreBitFieldsWidths
+    value: 'true'
+  - key: readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value: 'false'
+  - key: readability-magic-numbers.IgnoreTypeAliases
+    value: 'false'
 
-  #---------------------------------------------------------------------------
-  # Options for 'readability-*' checks
-  #---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # CS-04: readability-function-size
+  # Max 60 lines, max 3 parameters (from CODESTYLE.md)
+  # ---------------------------------------------------------------------------
+  - key: readability-function-size.LineThreshold
+    value: '60'
+  - key: readability-function-size.StatementThreshold
+    value: '40'
+  - key: readability-function-size.BranchThreshold
+    value: '10'
+  - key: readability-function-size.ParameterThreshold
+    value: '3'
+  - key: readability-function-size.NestingThreshold
+    value: '4'
 
-  # readability-braces-around-statements: Enforce braces for control statements.
-  # Recommended to prevent common bugs like the "dangling else" problem.
-  - key:             readability-braces-around-statements.ShortStatementLines
-    value:           '1' # Treat statements spanning more than 1 line as multi-line (requiring braces).
+  # ---------------------------------------------------------------------------
+  # readability-function-cognitive-complexity
+  # Standard threshold of 25
+  # ---------------------------------------------------------------------------
+  - key: readability-function-cognitive-complexity.Threshold
+    value: '25'
+  - key: readability-function-cognitive-complexity.DescribeBasicIncrements
+    value: 'true'
+  - key: readability-function-cognitive-complexity.IgnoreMacros
+    value: 'true'
 
-  # readability-function-cognitive-complexity: Checks for functions that are too complex.
-  # Helps maintain simple, understandable functions.
-  - key:             readability-function-cognitive-complexity.Threshold
-    value:           '20' # Set the maximum allowed cognitive complexity for a function.
-  - key:             readability-function-cognitive-complexity.IgnoreMacros
-    value:           'true'
+  # ---------------------------------------------------------------------------
+  # CS-05: readability-identifier-length
+  # Min 2 characters, with exceptions for loop counters (i, j, k, n, x, y, z)
+  # ---------------------------------------------------------------------------
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: '2'
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: '2'
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: '1'
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: '^[ijknxyz]$'
+  - key: readability-identifier-length.IgnoredParameterNames
+    value: '^[ijknxyz]$'
+  - key: readability-identifier-length.IgnoredLoopCounterNames
+    value: '^[ijknxyz]$'
 
-  # readability-function-size: Checks for functions that are too long.
-  # Shorter functions are generally easier to read, test, and maintain.
-  - key:             readability-function-size.LineThreshold
-    value:           '100' # Maximum number of lines.
-  - key:             readability-function-size.StatementThreshold
-    value:           '50' # Maximum number of statements.
-  - key:             readability-function-size.BranchThreshold
-    value:           '15' # Maximum number of branch points.
+  # ---------------------------------------------------------------------------
+  # CS-02: readability-braces-around-statements
+  # Mandatory braces for all control structures (CODESTYLE.md)
+  # ---------------------------------------------------------------------------
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '0'
 
-  # readability-identifier-naming: Enforces a consistent naming convention.
-  # Crucial for code readability and maintainability.
-  # For each 'Kind', you can specify a 'Case' and an optional 'Prefix' or 'Suffix'.
-  # Common Case Styles: CamelCase, camelBack, lower_case, UPPER_CASE
-  - key:             readability-identifier-naming.ClassCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.StructCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.EnumCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.EnumConstantCase
-    value:           camelBack
-  - key:             readability-identifier-naming.FunctionCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.GlobalConstantCase
-    value:           camelBack
-  - key:             readability-identifier-naming.GlobalFunctionCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.GlobalVariableCase
-    value:           camelBack
-  - key:             readability-identifier-naming.LocalConstantCase
-    value:           camelBack
-  - key:             readability-identifier-naming.LocalVariableCase
-    value:           camelBack
-  - key:             readability-identifier-naming.MemberConstantCase
-    value:           camelBack
-  - key:             readability-identifier-naming.PublicMethodCase
-    value:           CamelCase   
-  - key:             readability-identifier-naming.PrivateMethodCase
-    value:           camelBack  
-  - key:             readability-identifier-naming.ProtectedMethodCase
-    value:           camelBack
-  - key:             readability-identifier-naming.MemberVariableCase
-    value:           camelBack # A common convention is a prefix like 'm_' or a suffix '_'
-  - key:             readability-identifier-naming.ParameterCase
-    value:           camelBack
-  - key:             readability-identifier-naming.TypedefCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.TypeAliasCase # For 'using' aliases
-    value:           CamelCase
-  - key:             readability-identifier-naming.IgnoreMainLikeFunctions
-    value:           'true' # Avoids flagging 'main' and similar entry points.
+  # ---------------------------------------------------------------------------
+  # CS-02: modernize-use-auto
+  # Use auto everywhere possible (CODESTYLE.md)
+  # ---------------------------------------------------------------------------
+  - key: modernize-use-auto.MinTypeNameLength
+    value: '1'
+  - key: modernize-use-auto.RemoveStars
+    value: 'false'
 
-  # readability-magic-numbers: Finds magic numbers (unnamed numeric constants).
-  # Using named constants improves readability and makes code easier to modify.
-  - key:             readability-magic-numbers.IgnoreAllNumbers
-    value:           'false'
-  - key:             readability-magic-numbers.IgnoreBitFields
-    value:           'true'
-  - key:             readability-magic-numbers.IgnorePowersOf2
-    value:           'true' # Useful in bit manipulation code.
-  - key:             readability-magic-numbers.IgnoredNumbers
-    value:           '0, 1, -1' # A comma-separated list of numbers to ignore.
+  # ---------------------------------------------------------------------------
+  # CS-02: modernize-loop-convert
+  # Range-based for instead of index-based loops (CODESTYLE.md)
+  # ---------------------------------------------------------------------------
+  - key: modernize-loop-convert.MinConfidence
+    value: 'reasonable'
+  - key: modernize-loop-convert.NamingStyle
+    value: 'camelBack'
 
-  # readability-named-parameter: Suggests using C++20 designated initializers for clarity.
-  - key:             readability-named-parameter.MinimumArguments
-    value:           '2' # Require named parameters for calls with 2 or more arguments.
+  # ---------------------------------------------------------------------------
+  # CS-02: misc-const-correctness
+  # Enforce const for non-modified variables (CODESTYLE.md)
+  # ---------------------------------------------------------------------------
+  - key: misc-const-correctness.AnalyzeValues
+    value: 'true'
+  - key: misc-const-correctness.AnalyzeReferences
+    value: 'true'
+  - key: misc-const-correctness.WarnPointersAsValues
+    value: 'false'
+  - key: misc-const-correctness.TransformValues
+    value: 'true'
+  - key: misc-const-correctness.TransformReferences
+    value: 'true'
 
-  #---------------------------------------------------------------------------
-  # Options for 'modernize-*' checks
-  #---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # CS-04: modernize-make-shared / modernize-make-unique
+  # Smart pointers instead of raw new/delete (CODESTYLE.md)
+  # ---------------------------------------------------------------------------
+  - key: modernize-make-shared.IgnoreMacros
+    value: 'true'
+  - key: modernize-make-unique.IgnoreMacros
+    value: 'true'
 
-  # modernize-loop-convert: Recommends using range-based for loops.
-  - key:             modernize-loop-convert.MaxCopySize
-    value:           '16' # Max size of an object to be copied in a loop, in bytes.
-  - key:             modernize-loop-convert.MinConfidence
-    value:           'safe' # Other values: 'reasonable', 'risky'. 'safe' has the fewest false positives.
+  # ---------------------------------------------------------------------------
+  # CS-05: readability-identifier-naming
+  # Full naming configuration per CODESTYLE.md
+  # ---------------------------------------------------------------------------
 
-  # modernize-use-auto: Recommends using 'auto' for variable declarations.
-  - key:             modernize-use-auto.MinTypeNameLength
-    value:           '5' # Only suggest 'auto' for type names longer than this. '0' suggests for all.
-  - key:             modernize-use-auto.RemoveRedundantQualifiers
-    value:           'true'
+  # --- Namespaces: lower_case (e.g. fight, network, policy) ---
+  - key: readability-identifier-naming.NamespaceCase
+    value: 'lower_case'
 
-  # modernize-use-equals-default: Recommends '= default' for special member functions.
-  - key:             modernize-use-equals-default.IgnoreMacros
-    value:           'true'
+  # --- Types: PascalCase (classes, structs, enums, type aliases) ---
+  - key: readability-identifier-naming.ClassCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.StructCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.EnumCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.TypeAliasCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.TypedefCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.UnionCase
+    value: 'CamelCase'
 
-  # modernize-use-nullptr: Recommends 'nullptr' instead of NULL or 0.
-  - key:             modernize-use-nullptr.NullMacros
-    value:           'NULL' # A comma-separated list of macros that expand to a null pointer constant.
+  # --- Abstract class (interface) prefix: I ---
+  - key: readability-identifier-naming.AbstractClassCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.AbstractClassPrefix
+    value: 'I'
 
-  # modernize-use-trailing-return-type: Suggests using trailing return types for functions.
-  # This is often a stylistic choice.
-  - key:             modernize-use-trailing-return-type.MinimumQualification
-    value:           '::' # Only apply to functions with qualified return types.
+  # --- Enum constants: PascalCase ---
+  - key: readability-identifier-naming.EnumConstantCase
+    value: 'CamelCase'
 
-  #---------------------------------------------------------------------------
-  # Options for 'cppcoreguidelines-*' checks
-  #---------------------------------------------------------------------------
+  # --- Public methods: PascalCase ---
+  - key: readability-identifier-naming.PublicMethodCase
+    value: 'CamelCase'
 
-  # cppcoreguidelines-pro-type-member-init: Enforces in-class initialization of member variables.
-  - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
-    value:           'false'
+  # --- Private methods: camelCase ---
+  - key: readability-identifier-naming.PrivateMethodCase
+    value: 'camelBack'
 
-  # cppcoreguidelines-avoid-magic-numbers: Similar to readability-magic-numbers but part of the core guidelines.
-  - key:             cppcoreguidelines-avoid-magic-numbers.IgnoreAllNumbers
-    value:           'false'
-  - key:             cppcoreguidelines-avoid-magic-numbers.IgnoreBitFields
-    value:           'true'
-  - key:             cppcoreguidelines-avoid-magic-numbers.IgnorePowersOf2
-    value:           'true'
-  - key:             cppcoreguidelines-avoid-magic-numbers.IgnoredNumbers
-    value:           '0, 1, -1'
+  # --- Protected methods: camelCase ---
+  - key: readability-identifier-naming.ProtectedMethodCase
+    value: 'camelBack'
 
-  #---------------------------------------------------------------------------
-  # Options for 'bugprone-*' checks
-  #---------------------------------------------------------------------------
+  # --- Public member variables: camelCase (no prefix/suffix per CODESTYLE.md) ---
+  - key: readability-identifier-naming.PublicMemberCase
+    value: 'camelBack'
+  - key: readability-identifier-naming.PublicMemberPrefix
+    value: ''
+  - key: readability-identifier-naming.PublicMemberSuffix
+    value: ''
 
-  # bugprone-easily-swappable-parameters: Detects function parameters of the same type that could be swapped accidentally.
-  - key:             bugprone-easily-swappable-parameters.MinimumLength
-    value:           '2' # Minimum number of parameters to check.
-  - key:             bugprone-easily-swappable-parameters.IgnoredParameterNames
-    value:           '' # Semicolon-separated list of parameter names to ignore.
-  - key:             bugprone-easily-swappable-parameters.IgnoredParameterTypeSuffixes
-    value:           '' # Semicolon-separated list of type name suffixes to ignore (e.g., 'Id';'Key').
+  # --- Private member variables: camelCase (no prefix/suffix per CODESTYLE.md) ---
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: 'camelBack'
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: ''
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: ''
 
+  # --- Protected member variables: camelCase ---
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: 'camelBack'
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: ''
+  - key: readability-identifier-naming.ProtectedMemberSuffix
+    value: ''
+
+  # --- Static member variables: PascalCase (global-like names per CS-06) ---
+  - key: readability-identifier-naming.ClassMemberCase
+    value: 'camelBack'
+
+  # --- Local variables: camelCase ---
+  - key: readability-identifier-naming.LocalVariableCase
+    value: 'camelBack'
+
+  # --- Function parameters: camelCase ---
+  - key: readability-identifier-naming.ParameterCase
+    value: 'camelBack'
+
+  # --- Global/namespace functions: PascalCase (per CS-06) ---
+  - key: readability-identifier-naming.FunctionCase
+    value: 'CamelCase'
+
+  # --- Global/namespace variables: PascalCase (per CS-06) ---
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: 'CamelCase'
+
+  # --- Global/namespace constants: PascalCase (per CS-06) ---
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.StaticConstantCase
+    value: 'CamelCase'
+
+  # --- Local constants: camelCase (per CS-02 examples: constexpr auto maxSize = 1024) ---
+  - key: readability-identifier-naming.LocalConstantCase
+    value: 'camelBack'
+  - key: readability-identifier-naming.LocalConstantPointerCase
+    value: 'camelBack'
+
+  # --- Constexpr functions: PascalCase ---
+  - key: readability-identifier-naming.ConstexprFunctionCase
+    value: 'CamelCase'
+
+  # --- Static methods: PascalCase (factory methods, pure functions per CS-01) ---
+  - key: readability-identifier-naming.ClassMethodCase
+    value: 'CamelCase'
+
+  # --- Macro naming: UPPER_CASE ---
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: 'UPPER_CASE'
+
+  # ---------------------------------------------------------------------------
+  # CS-02: Exception-related checks (no exceptions policy)
+  # ---------------------------------------------------------------------------
+  - key: bugprone-exception-escape.FunctionsThatShouldNotThrow
+    value: ''
+  - key: bugprone-exception-escape.IgnoredExceptions
+    value: ''
+
+  # ---------------------------------------------------------------------------
+  # Performance checks
+  # ---------------------------------------------------------------------------
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: 'true'
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: ''
+
+  # ---------------------------------------------------------------------------
+  # cppcoreguidelines overrides
+  # ---------------------------------------------------------------------------
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: 'true'
+  - key: cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: 'false'
+  - key: cppcoreguidelines-special-member-functions.AllowMissingMoveFunctionsWhenCopyIsDeleted
+    value: 'true'
