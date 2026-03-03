@@ -50,8 +50,8 @@ func main() {
 
 	// Format the message
 	message := fmt.Sprintf(
-		"📅 *Неделя %d, год %d*\n\n"+
-			"График на эту неделю:\n"+
+		"📅 *Week %d, year %d*\n\n"+
+			"Schedule for this week:\n"+
 			"P - %s\n"+
 			"A - %s\n"+
 			"K - %s\n",

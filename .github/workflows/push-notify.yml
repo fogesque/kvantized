@@ -1,0 +1,67 @@
+name: Telegram Push Notification
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Collect commit messages
+      id: commits
+      run: |
+        BEFORE=${{ github.event.before }}
+        AFTER=${{ github.event.after }}
+
+        # If before is all zeros (new branch), use the single commit
+        if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+          MESSAGES=$(git log --format="%s" -1 "$AFTER")
+        else
+          MESSAGES=$(git log --format="%s" "$BEFORE".."$AFTER")
+        fi
+
+        echo "COMMIT_MESSAGES<<EOF" >> "$GITHUB_ENV"
+        echo "$MESSAGES" >> "$GITHUB_ENV"
+        echo "EOF" >> "$GITHUB_ENV"
+
+    - name: Collect changed files
+      id: files
+      run: |
+        BEFORE=${{ github.event.before }}
+        AFTER=${{ github.event.after }}
+
+        if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+          FILES=$(git diff-tree --no-commit-id --name-only -r "$AFTER")
+        else
+          FILES=$(git diff --name-only "$BEFORE" "$AFTER")
+        fi
+
+        echo "CHANGED_FILES<<EOF" >> "$GITHUB_ENV"
+        echo "$FILES" >> "$GITHUB_ENV"
+        echo "EOF" >> "$GITHUB_ENV"
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Install dependencies
+      run: cd bots/push-notify && go mod download
+
+    - name: Send notification
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+        COMMIT_MESSAGES: ${{ env.COMMIT_MESSAGES }}
+        CHANGED_FILES: ${{ env.CHANGED_FILES }}
+        PUSHER_NAME: ${{ github.actor }}
+        REPO_NAME: ${{ github.repository }}
+      run: cd bots/push-notify && go run main.go

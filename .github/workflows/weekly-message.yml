@@ -23,8 +23,8 @@ jobs:
         go-version: '1.21'
     
     - name: Install dependencies
-      run: cd bot && go mod download
-    
+      run: cd bots/weekly-message && go mod download
+
     - name: Run bot
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -34,4 +34,4 @@ jobs:
         A_WP_ODD: ${{ secrets.A_WP_ODD }}
         K_WP_EVEN: ${{ secrets.K_WP_EVEN }}
         K_WP_ODD: ${{ secrets.K_WP_ODD }}
-      run: cd bot && go run main.go
+      run: cd bots/weekly-message && go run main.go
