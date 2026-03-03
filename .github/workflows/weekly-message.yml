@@ -23,7 +23,7 @@ jobs:
         go-version: '1.21'
     
     - name: Install dependencies
-      run: cd bots/weekly-message && go mod download
+      run: cd bots/weekly-message && go mod tidy
 
     - name: Run bot
       env:

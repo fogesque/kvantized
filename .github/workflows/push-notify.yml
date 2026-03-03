@@ -54,7 +54,7 @@ jobs:
         go-version: '1.21'
 
     - name: Install dependencies
-      run: cd bots/push-notify && go mod download
+      run: cd bots/push-notify && go mod tidy
 
     - name: Send notification
       env:
