@@ -78,10 +78,20 @@ public:
 
 #pragma region ${CLASS_NAME}::Construct
 
+    /// @brief Default constructor is deleted
+    ${CLASS_NAME}() = delete;
+
     /// @brief Copy constructor is deleted
     ${CLASS_NAME}(const ${CLASS_NAME} &) = delete;
+    
     /// @brief Copy operator is deleted
     ${CLASS_NAME} & operator=(const ${CLASS_NAME} &) = delete;
+
+    /// @brief Move constructor is deleted
+    ${CLASS_NAME}(${CLASS_NAME} &&) = delete;
+
+    /// @brief Move operator is deleted
+    ${CLASS_NAME} & operator=(${CLASS_NAME} &&) = delete;
 
     /// @brief Config struct for object construction
     struct Config {
@@ -140,10 +150,20 @@ public:
 
 #pragma region ${CLASS_NAME}::Construct
 
+    /// @brief Default constructor is deleted
+    ${CLASS_NAME}() = delete;
+
     /// @brief Copy constructor is deleted
     ${CLASS_NAME}(const ${CLASS_NAME} &) = delete;
+
     /// @brief Copy operator is deleted
     ${CLASS_NAME} & operator=(const ${CLASS_NAME} &) = delete;
+
+    /// @brief Move constructor is deleted
+    ${CLASS_NAME}(${CLASS_NAME} &&) = delete;
+
+    /// @brief Move operator is deleted
+    ${CLASS_NAME} & operator=(${CLASS_NAME} &&) = delete;
 
     /// @brief Config struct for object construction
     struct Config {
@@ -152,6 +172,7 @@ public:
     /// @brief Constructor
     /// @warning Avoid using this constructor since class has static fabric methods
     explicit ${CLASS_NAME}(const Config & config);
+
     /// @brief Destructor
     ~${CLASS_NAME}();
 
