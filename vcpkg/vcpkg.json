@@ -1,0 +1,35 @@
+{
+    "name": "<PACKAGE_NAME>",
+    "version": "<X.Y.Z>",
+    "description": "Description of the package",
+    "homepage": "https://github.com/<USER>/<PACKAGE_NAME>",
+    "license": "<LICENSE>",
+    "supports": "linux",
+    "dependencies": [
+        {
+            "name": "vcpkg-cmake",
+            "host": true
+        },
+        {
+            "name": "vcpkg-cmake-config",
+            "host": true
+        },
+        {
+            "name": "<PACKAGE_NAME>"
+        }
+    ],
+    "features": {
+        "X": {
+            "description": "Description of feature X",
+            "dependencies": [
+                "gtest"
+            ]
+        },
+        "Y": {
+            "description": "Description of feature Y",
+            "dependencies": [
+                "yaml-cpp"
+            ]
+        }
+    }
+}
