@@ -9,7 +9,7 @@ BasedOnStyle: Google
 Language: Cpp
 
 # Standard version (c++03, c++11, c++14, c++17, c++20, Latest, Auto)
-Standard: Latest
+Standard: c++23
 
 #===============================================================================
 # INDENTATION AND SPACING
@@ -279,47 +279,36 @@ AlignEscapedNewlines: Right
 #===============================================================================
 
 # Sort include statements
-SortIncludes: CaseSensitive # Never, CaseSensitive, CaseInsensitive
+SortIncludes: true  # Never, CaseSensitive, CaseInsensitive
 
 # Include blocks handling
 # Preserve, Merge, Regroup
 IncludeBlocks: Regroup
 
-# Three categories distinguished by Priority. Inside <...> system and third-party
-# headers are told apart by their shape:
-#   - STL:        no extension       -> <vector>, <atomic>
-#   - POSIX/C:    ends with .h       -> <unistd.h>, <sys/stat.h>
-#   - 3rd-party:  .hpp / path / etc. -> <errors/errors.hpp>
-IncludeCategories:
-  # 1. System headers: STL (no extension) and POSIX/C (.h).
-  - Regex:           '^<[^/.]+>$'
-    Priority:        1
-    SortPriority:    0
-    CaseSensitive:   false
-  - Regex:           '^<[^>]+\.h>$'
-    Priority:        1
-    SortPriority:    0
-    CaseSensitive:   false
+# Regex for main include (usually the .h file for a .cpp file)
+IncludeIsMainRegex: '([-_](test|unittest))?$'
 
-  # 2. Third-party libraries in <...> (vcpkg etc.: .hpp, nested paths, ...).
-  - Regex:           '^<.+>$'
+# Source file extensions to consider as main include
+IncludeIsMainSourceRegex: ''
+
+# Categories for grouping includes (lower numbers come first)
+IncludeCategories:
+  - Regex:           '^<ext/.*\.h>'  # Extensions
     Priority:        2
     SortPriority:    0
     CaseSensitive:   false
-
-  # 3. In-project headers in "...".
-  - Regex:           '^".+"$'
+  - Regex:           '^<.*\.h>'     # C system headers
+    Priority:        1
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^<.*'         # C++ system headers
+    Priority:        2
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '.*'           # Everything else (project headers)
     Priority:        3
     SortPriority:    0
     CaseSensitive:   false
-
-# Regex for the "main" include of a .cpp/.cc file — it gets Priority 0
-# and is placed on the very first line, outside of the three blocks above.
-IncludeIsMainRegex: '([-_](test|unittest))?$'
-
-# Source file extensions considered when looking for the main include.
-IncludeIsMainSourceRegex: ''
-
 
 #===============================================================================
 # COMMENT FORMATTING
