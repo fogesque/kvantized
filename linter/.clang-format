@@ -9,7 +9,7 @@ BasedOnStyle: Google
 Language: Cpp
 
 # Standard version (c++03, c++11, c++14, c++17, c++20, Latest, Auto)
-Standard: Auto
+Standard: Latest
 
 #===============================================================================
 # INDENTATION AND SPACING
