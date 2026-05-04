@@ -1174,12 +1174,9 @@ public:
     static Builder Create();
 
     /// @brief Adds fighter to the club
-    /// @param fighter Fighter to add
-    /// @return Error if fighter with the same name already exists
     error AddFighter(const Fighter & fighter);
 
     /// @brief Constructor
-    /// @warning Avoid using this constructor since class has static fabric methods
     explicit FightClub(const Config & config);
 };
 ```
