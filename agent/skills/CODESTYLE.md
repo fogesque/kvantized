@@ -1024,6 +1024,8 @@ bool FightClub::fighterExists(const std::string & name)
 2. **Сторонние** библиотеки в `<...>` (vcpkg-зависимости и подобные)
 3. **Внутрипроектные** заголовки в `"..."` с относительным путём от корня include
 
+Запрещается: использовать относительные пути формата "../something.hpp"!
+
 ```cpp
 #pragma once
 
@@ -1355,7 +1357,6 @@ public:
 ## CS-09: Логирование
 
 Логирование организовано через header-only библиотеку kvalog.
-Логгеры **не являются членами класса** — не загрязняют интерфейс, не участвуют в копировании/перемещении объектов и не привязаны к жизненному циклу инстансов.
 
 ### Имя модуля
 
@@ -1369,7 +1370,7 @@ public:
 #include <kvalog/kvalog.hpp>
 
 const auto context = kvalog::Logger::Context{
-    .appName = "Kvantized",
+    .appName = "kvantized",
     .moduleName = "core::device",
 };
 auto logger = kvalog::CreateLogger(kvalog::LogProfile::ColoredDefault, context);
@@ -1405,57 +1406,11 @@ logger->Critical("Unrecoverable state: {}", state.Message());
 
 Уровни используются по назначению, указанном в их названии: `Trace`/`Debug`, `Info`, `Warning`, `Error`, `Critical`.
 
-### Кастомная конфигурация
-
-Если ни один из профилей не подходит, конфигурация собирается через `kvalog::Logger::Config` и передаётся в `kvalog::Logger::Create`. Можно начать с профиля `kvalog::MakeProfileConfig` и точечно изменить нужные поля.
-
-```cpp
-auto config = kvalog::MakeProfileConfig(kvalog::LogProfile::Verbose);
-config.logFilePath = "/var/log/kvantized.log";
-config.fields.includeProcessId = false;
-config.fields.includeThreadId = false;
-
-const auto context = kvalog::Logger::Context{
-    .appName = "Kvantized",
-    .moduleName = "server",
-};
-auto logger = kvalog::Logger::Create(config, context);
-```
-
-Дочерний логгер с тем же конфигом, но другим контекстом, создаётся через `kvalog::Logger::WithConfigFrom`. Это поддерживает единый стиль вывода между подсистемами.
-
-```cpp
-const auto dbContext = kvalog::Logger::Context{
-    .appName = "Kvantized",
-    .moduleName = "core::database",
-};
-auto dbLogger = kvalog::Logger::WithConfigFrom(*logger, dbContext);
-```
-
 ### Уровни логирования
 
 Минимальный уровень задаётся через `SetLevel`. Сообщения ниже установленного уровня отбрасываются без форматирования.
 
 ```cpp
 logger->SetLevel(kvalog::LogLevel::Warning);
-```
-
-### Асинхронный режим
-
-Для высокочастотного логирования используется асинхронный режим: запись выполняется в фоновом потоке, что снимает накладные расходы.
-
-```cpp
-auto config = kvalog::MakeProfileConfig(kvalog::LogProfile::Json);
-config.asyncMode = kvalog::Logger::Mode::Async;
-config.asyncQueueSize = 16384;
-config.asyncThreadCount = 2;
-```
-
-### Завершение работы
-
-Перед завершением приложения обязательно вызывается `Flush()` — это гарантирует, что буферизованные сообщения (особенно в асинхронном режиме) будут записаны до выхода.
-
-```cpp
-logger->Flush();
 ```
 
