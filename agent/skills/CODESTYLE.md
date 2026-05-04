@@ -279,6 +279,88 @@ std::tuple<Config, error> ParseConfig(const std::string & path)
 }
 ```
 
+### enum class
+
+Все перечисления должны быть `enum class`. Обычный `enum` запрещён, так как загрязняет окружающий namespace и допускает неявные приведения к целым числам.
+
+```cpp
+// Плохо: обычный enum
+enum Direction {
+    Read,
+    Write
+};
+
+// Хорошо: enum class
+enum class Direction {
+    Read,
+    Write
+};
+```
+
+### override и final
+
+При реализации виртуальных методов обязательно указывается `override` — это защищает от случайных рассинхронизаций сигнатур. Если метод (или класс) не должен переопределяться далее — добавляется `final`.
+
+```cpp
+// Плохо: override отсутствует, ошибка в сигнатуре не поймается компилятором
+class Worker : public IWorker
+{
+public:
+    error Start();
+};
+
+// Хорошо: override обязателен на всех реализациях
+class Worker : public IWorker
+{
+public:
+    error Start() override;
+};
+
+// Хорошо: final запрещает дальнейшее переопределение
+class FinalWorker : public IWorker
+{
+public:
+    error Start() override final;
+};
+```
+
+### Ключевое слово explicit
+
+Все конструкторы с одним аргументом — включая конструкторы, принимающие единственную структуру `Config`, — должны помечаться `explicit`. Это запрещает неявные конверсии и неожиданные вызовы.
+
+```cpp
+// Плохо: возможно неявное приведение
+class Worker
+{
+public:
+    Worker(const Config & config);
+};
+Worker worker = config;  // компилируется, но непрозрачно
+
+// Хорошо: explicit конструктор
+class Worker
+{
+public:
+    explicit Worker(const Config & config);
+};
+Worker worker(config);  // только явное создание
+```
+
+### std::span
+
+Для невладеющих представлений непрерывных буферов использовать `std::span<T>` вместо передачи пары `T* + size`.
+
+```cpp
+// Плохо: пара указатель + размер
+error WriteData(uint8_t * data, std::size_t size);
+
+// Хорошо: std::span
+error WriteData(std::span<uint8_t> data);
+
+// Хорошо: невладеющее представление на const-данные
+std::span<const Item> GetItems() const;
+```
+
 ## CS-03: Обработка ошибок
 
 ### Возврат ошибок из функций
@@ -441,6 +523,31 @@ auto [module, err] = DeviceModule::Create(config);
 
 // Хорошо: передача через умный указатель
 error StartModule(DeviceModulePtr module);
+```
+
+
+### struct vs class
+
+`struct` используется только для пассивных POD-агрегатов: конфигурационных структур, DTO, статистики. У `struct` все поля — public, методов либо нет, либо они тривиальные. Любая нетривиальная инкапсуляция, инвариант или поведение — повод объявлять `class`.
+
+```cpp
+// Хорошо: пассивный агрегат — struct
+struct ConnectionConfig {
+    std::string host;
+    int port = 0;
+    bool useTls = false;
+};
+
+// Хорошо: инкапсуляция, инварианты, методы — class
+class Connection
+{
+public:
+    static std::tuple<ConnectionPtr, error> Create(const ConnectionConfig & config);
+    error Send(std::span<const uint8_t> data);
+
+private:
+    int socket = 0;
+};
 ```
 
 ## CS-05: Именование
@@ -908,3 +1015,399 @@ bool FightClub::fighterExists(const std::string & name)
 
 }  // namespace fight
 ```
+
+### Порядок директив #include
+
+Заголовки группируются в три блока, разделённые пустой строкой. Внутри каждого блока — алфавитный порядок:
+
+1. **Системные** заголовки в `<...>` (STL, POSIX и т.п.)
+2. **Сторонние** библиотеки в `<...>` (vcpkg-зависимости и подобные)
+3. **Внутрипроектные** заголовки в `"..."` с относительным путём от корня include
+
+Запрещается: использовать относительные пути формата "../something.hpp"!
+
+```cpp
+#pragma once
+
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <tuple>
+#include <vector>
+
+#include <errors/errors.hpp>
+#include <kvalog/kvalog.hpp>
+
+#include "app/core/device.hpp"
+#include "app/core/resource_scope.hpp"
+#include "app/server/internal/connection_pool.hpp"
+```
+
+### Стиль namespace
+
+Используется только вложенная форма `namespace a::b::c { ... }`. Форма с раздельными вложениями (`namespace a { namespace b { ... } }`) запрещена. Закрывающий комментарий обязателен и записывается в виде `}  // namespace a::b::c`.
+
+```cpp
+// Плохо: раздельные вложения
+namespace app {
+namespace server {
+namespace internal {
+    class ConnectionPool;
+}
+}
+}
+
+// Хорошо: вложенный namespace
+namespace app::server::internal
+{
+
+class ConnectionPool;
+
+}  // namespace app::server::internal
+```
+
+### Внутренние типы и namespace internal
+
+Все типы, не являющиеся частью публичного API модуля, размещаются в namespace `<module>::internal`. Публичный API модуля — непосредственно в `<module>`. Это явно разделяет то, что пользователь библиотеки может использовать, и детали реализации.
+
+```cpp
+// Публичный API
+namespace app::server
+{
+
+class Server
+{
+public:
+    static Builder Create();
+    error Serve();
+};
+
+}  // namespace app::server
+
+// Детали реализации
+namespace app::server::internal
+{
+
+class ConnectionPool;
+class SessionManager;
+
+}  // namespace app::server::internal
+```
+
+### Именование #pragma region
+
+Имя региона формируется как `ClassName::SectionName`. Это позволяет находить регион в IDE по имени класса и не путать одноимённые секции из разных классов в одном файле.
+
+Стандартные имена регионов:
+
+- `ClassName::Construct` — конструкторы и деструкторы
+- `ClassName::Builder` — определение вложенного билдера
+- `ClassName::PrivateMethods` — все приватные методы
+
+```cpp
+class Server
+{
+private:
+#pragma region Server::PrivateMethods
+
+    error setup();
+    error teardown();
+
+#pragma endregion
+};
+```
+
+### Таксономия секций /// [Section]
+
+Внутри классов методы и переменные группируются именованными секциями `/// [Section]`. Стандартный набор имён:
+
+**В public-секции:**
+
+- `[Fabric Methods]` — фабричные методы `Create`
+- `[<Domain>]` — доменные группы публичных методов (`[Server Control]`, `[Connection Management]`, `[Buffer Access]` и т.п.)
+- `[Accessors]` — геттеры
+- `[Construction & Destruction]` — конструкторы, деструкторы и удалённые copy/move-методы
+- `[Builder]` — вложенный класс билдера
+
+**В private-секции:**
+
+- `[Private Methods]` или доменные группы (`[Validation]`, `[Connection Handling]`)
+- `[Properties]` — переменные-члены, всегда **последняя** секция в private
+
+Внутри `[Properties]` для крупных классов допустимы вложенные подсекции для группировки полей:
+
+```cpp
+private:
+    /// [Properties]
+
+    /// [Configuration]
+
+    /// @brief Server configuration
+    Config config;
+
+    /// [Resources]
+
+    /// @brief Connection pool
+    ConnectionPoolPtr pool = nullptr;
+
+    /// [State]
+
+    /// @brief Active flag
+    std::atomic_bool active = false;
+```
+
+### Документирующие комментарии
+
+`@brief` обязателен для каждого класса, метода (публичного **и** приватного), переменной-члена и поля структуры **и** должен быть краток (написан не длинее чем в одну строку). Дополнительные теги (`@param`, `@return`, `@details`, `@warning`) добавляются на последней стадии проекта при документировании **и** только тогда, когда несут информацию сверх той, что содержится в имени.
+
+Описание класса оформляется блоком из трёх подряд `///`:
+
+```cpp
+///
+/// @brief
+/// FightClub manages fighters and provides operations for adding and searching fighters
+///
+class FightClub
+{
+public:
+    /// @brief Creates FightClub instance
+    static Builder Create();
+
+    /// @brief Adds fighter to the club
+    error AddFighter(const Fighter & fighter);
+
+    /// @brief Constructor
+    explicit FightClub(const Config & config);
+};
+```
+
+## CS-08: Паттерн Builder
+
+Класс с числом конфигурационных параметров больше двух-трёх или с обязательной валидацией создаётся через паттерн Builder. Это альтернатива сложному фабричному методу: Builder делает шаги конфигурации последовательными и читаемыми, а валидацию — централизованной в одном месте.
+
+### Структура
+
+- Билдер — это **вложенный класс** `Builder` основного класса.
+- В `public:` секции основного класса — forward declaration `class Builder;`.
+- Полное определение `Builder` располагается в основном классе после блока `[Construction & Destruction]`, помечается секцией `/// [Builder]` и обёрнуто в `#pragma region ClassName::Builder`.
+- Фабричный метод основного класса возвращает экземпляр билдера: `static Builder Create();` (без `error`, билдер создаётся всегда).
+- Билдер работает со вложенным `struct Config` основного класса: внутри билдера хранится поле `OuterClass::Config config;`.
+
+### Конфигурационные методы
+
+Каждый параметр устанавливается отдельным методом `SetX`, возвращающим `Builder &` для цепочного вызова. Реализация — присваивание поля `config` и `return *this`:
+
+```cpp
+Server::Builder & Server::Builder::SetListenPort(uint16_t port)
+{
+    this->config.listenPort = port;
+    return *this;
+}
+```
+
+### Аккумулятор отложенных ошибок
+
+Если конфигурационный метод может технически завершиться с ошибкой, эта ошибка **не возвращается** из `SetX` (это сломало бы fluent-стиль). Вместо этого она сохраняется в поле билдера `error buildErr = nullptr;` и проверяется первым шагом в `Build()`.
+
+### Метод Build
+
+`Build()` — единственный метод билдера, возвращающий `std::tuple<Ptr, error>`. Структура `Build()`:
+
+1. Проверка отложенной ошибки `buildErr`.
+2. Проверка обязательных полей `config` (сообщения с заглавной буквы, см. CS-03).
+3. Доменная валидация конфигурации (например, проверки границ).
+4. Создание объекта через `std::make_shared<OuterClass>(this->config)`.
+
+```cpp
+std::tuple<ServerPtr, error> Server::Builder::Build()
+{
+    if (this->buildErr) {
+        return { nullptr, this->buildErr };
+    }
+
+    if (!this->config.device) {
+        return { nullptr, errors::New("Device is not set") };
+    }
+
+    if (this->config.listenPort == 0) {
+        return { nullptr, errors::New("Listen port is not set") };
+    }
+
+    // Validate stream config
+    auto err = ValidateStreamConfig(this->config.streamConfig);
+    if (err) {
+        return { nullptr, errors::Wrap(err, "Invalid stream configuration") };
+    }
+
+    auto server = std::make_shared<Server>(this->config);
+    return { server, nullptr };
+}
+```
+
+### Семантика билдера
+
+Билдер — non-copyable, movable. Это позволяет вернуть билдер из `Create()` без копирования и продолжить цепочный вызов на временном объекте:
+
+```cpp
+Builder(const Builder &) = delete;
+Builder & operator=(const Builder &) = delete;
+Builder(Builder &&) = default;
+Builder & operator=(Builder &&) = default;
+Builder() = default;
+~Builder() = default;
+```
+
+### Использование
+
+```cpp
+// Цепочный вызов на временном объекте билдера
+auto [server, err] = Server::Create()
+    .SetDevice(device)
+    .SetListenPort(8080)
+    .SetStreamConfig(streamConfig)
+    .Build();
+
+if (err) {
+    return errors::Wrap(err, "Failed to build server");
+}
+```
+
+### Полный пример заголовка
+
+```cpp
+// include/app/Server.hpp
+class Server
+{
+public:
+    class Builder;
+
+    /// [Fabric Methods]
+
+    /// @brief Creates server builder
+    static Builder Create();
+
+    /// [Construction & Destruction]
+
+#pragma region Server::Construct
+
+    Server(const Server &) = delete;
+    Server & operator=(const Server &) = delete;
+    Server(Server &&) noexcept = default;
+    Server & operator=(Server &&) noexcept = default;
+
+    /// @brief Config struct for object construction
+    struct Config {
+        DevicePtr device = nullptr;
+        uint16_t listenPort = 0;
+    };
+
+    /// @brief Constructor
+    /// @warning Avoid using this constructor since class has static fabric methods
+    explicit Server(const Config & config);
+    /// @brief Destructor
+    ~Server();
+
+#pragma endregion
+
+    /// [Builder]
+
+#pragma region Server::Builder
+
+    /// @brief Builder class for constructing Server with configuration options
+    class Builder
+    {
+    public:
+        /// [Fabric Methods]
+
+        /// @brief Builds Server instance with configured options
+        std::tuple<ServerPtr, error> Build();
+
+        /// [Configuration]
+
+        /// @brief Sets device
+        Builder & SetDevice(DevicePtr device);
+        /// @brief Sets TCP listen port
+        Builder & SetListenPort(uint16_t port);
+
+        /// [Construction & Destruction]
+
+        Builder(const Builder &) = delete;
+        Builder & operator=(const Builder &) = delete;
+        Builder(Builder &&) = default;
+        Builder & operator=(Builder &&) = default;
+        Builder() = default;
+        ~Builder() = default;
+
+    private:
+        /// [Properties]
+
+        /// @brief Build error accumulator
+        error buildErr = nullptr;
+        /// @brief Server configuration
+        Server::Config config;
+    };
+
+#pragma endregion
+};
+```
+
+## CS-09: Логирование
+
+Логирование организовано через header-only библиотеку kvalog.
+
+### Имя модуля
+
+В `loggerContext.moduleName` записывается путь модуля в нижнем регистре через `::` — например, `server`, `core::device`, `pipeline::chain`. Это позволяет фильтровать вывод по подсистеме при отладке.
+
+### Создание логгера через профиль
+
+Логгер создаётся фабричной функцией `kvalog::CreateLogger`, принимающей профиль (`kvalog::LogProfile`) и контекст (`kvalog::Logger::Context`). Контекст содержит имя приложения и имя модуля. Фабрика возвращает `kvalog::LoggerPtr` (`std::shared_ptr<Logger>`).
+
+```cpp
+#include <kvalog/kvalog.hpp>
+
+const auto context = kvalog::Logger::Context{
+    .appName = "kvantized",
+    .moduleName = "core::device",
+};
+auto logger = kvalog::CreateLogger(kvalog::LogProfile::ColoredDefault, context);
+```
+
+### Выбор профиля
+
+Профиль выбирается под назначение бинарника. По умолчанию — `ColoredDefault` для интерактивных запусков и `Json` для production-агрегации логов.
+
+| Профиль | Когда использовать |
+|---|---|
+| `Minimal` | Утилиты CLI, где требуется минимальный вывод |
+| `Default` | Стандартный вывод без меток времени |
+| `Detailed` | Локальная отладка с метками времени |
+| `Verbose` | Глубокая диагностика с PID/TID |
+| `ColoredDefault` | Интерактивная разработка в терминале |
+| `ColoredDetailed` | Интерактивная отладка с метками времени |
+| `ColoredVerbose` | Интерактивная глубокая диагностика |
+| `Json` | Production, сбор логов в агрегатор |
+
+### Вызов методов логирования
+
+Сообщения формируются `fmt`-style форматной строкой и вариативными аргументами. Source location получаются автоматически. Доступны шесть уровней — от `Trace` до `Critical`.
+
+```cpp
+logger->Trace("Entering pipeline stage '{}'", stage.Name());
+logger->Debug("Buffer size: {} bytes", buffer.size());
+logger->Info("Module '{}' initialized on port {}", module.Name(), port);
+logger->Warning("Cache miss rate: {:.1f}%", missRate);
+logger->Error("Failed to parse config: {}", err->Message());
+logger->Critical("Unrecoverable state: {}", state.Message());
+```
+
+Уровни используются по назначению, указанном в их названии: `Trace`/`Debug`, `Info`, `Warning`, `Error`, `Critical`.
+
+### Уровни логирования
+
+Минимальный уровень задаётся через `SetLevel`. Сообщения ниже установленного уровня отбрасываются без форматирования.
+
+```cpp
+logger->SetLevel(kvalog::LogLevel::Warning);
+```
+
