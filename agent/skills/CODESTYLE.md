@@ -346,9 +346,9 @@ public:
 Worker worker(config);  // только явное создание
 ```
 
-### std::span и std::string_view
+### std::span
 
-Для невладеющих представлений непрерывных буферов использовать `std::span<T>` вместо передачи пары `T* + size`. Для невладеющих строковых аргументов, в которых не требуется владение, — `std::string_view` вместо `const std::string &`.
+Для невладеющих представлений непрерывных буферов использовать `std::span<T>` вместо передачи пары `T* + size`.
 
 ```cpp
 // Плохо: пара указатель + размер
@@ -525,38 +525,6 @@ auto [module, err] = DeviceModule::Create(config);
 error StartModule(DeviceModulePtr module);
 ```
 
-### Семантика копирования и перемещения
-
-Для каждого нетривиального класса все четыре спецметода (copy/move ctor, copy/move assign) объявляются явно. Копирование всегда запрещено (`= delete`). Перемещение разрешается или запрещается по следующему правилу:
-
-- **Immovable** (`= delete` для move): классы, владеющие потоками, мьютексами, condition variable, RAII-хэндлами внешних SDK. Перемещение таких объектов опасно — потребитель ресурса может ссылаться на старый адрес или внутреннее состояние.
-- **Movable** (`= default`): классы-фасады, конфигурационные обёртки, билдеры — то есть объекты, не связанные сильно с конкретным адресом в памяти.
-
-```cpp
-// Хорошо: класс с потоками и мьютексом — immovable
-class Worker
-{
-public:
-    Worker(const Worker &) = delete;
-    Worker & operator=(const Worker &) = delete;
-    Worker(Worker &&) noexcept = delete;
-    Worker & operator=(Worker &&) noexcept = delete;
-
-private:
-    std::thread thread;
-    std::mutex stateMutex;
-};
-
-// Хорошо: лёгкий фасад без живых ресурсов — movable
-class Server
-{
-public:
-    Server(const Server &) = delete;
-    Server & operator=(const Server &) = delete;
-    Server(Server &&) noexcept = default;
-    Server & operator=(Server &&) noexcept = default;
-};
-```
 
 ### struct vs class
 
@@ -786,28 +754,6 @@ error Initialize(DeviceModulePtr module)
     logging::Log("Module initialized");
     return nullptr;
 }
-```
-
-### Алиасы using в исходных файлах
-
-Длинные квалифицированные имена в `.cpp` допустимо сокращать через `using <namespace>::Type;`. Это допускается **только в исходных файлах**, никогда — в заголовках. Алиасы группируются после `#include` и до открытия namespace класса. Это не противоречит правилу явной квалификации: цель `using` — устранить визуальный шум для типов, которые в данном `.cpp` встречаются десятки раз.
-
-```cpp
-// src/server/Server.cpp
-#include "app/server/Server.hpp"
-
-namespace app::server
-{
-
-// Алиасы для часто используемых внутренних типов
-using internal::ConnectionPool;
-using internal::ConnectionPoolPtr;
-using internal::SessionManager;
-using internal::SessionManagerPtr;
-
-// ... реализация ...
-
-}  // namespace app::server
 ```
 
 ## CS-06: Глобальная область видимости
@@ -1210,7 +1156,7 @@ private:
 
 ### Документирующие комментарии
 
-`@brief` обязателен для каждого класса, метода (публичного **и** приватного), переменной-члена и поля структуры. Дополнительные теги (`@param`, `@return`, `@details`, `@warning`) добавляются только тогда, когда несут информацию сверх той, что содержится в имени.
+`@brief` обязателен для каждого класса, метода (публичного **и** приватного), переменной-члена и поля структуры **и** должен быть краток (написан не длинее чем в одну строку). Дополнительные теги (`@param`, `@return`, `@details`, `@warning`) добавляются на последней стадии проекта при документировании **и** только тогда, когда несут информацию сверх той, что содержится в имени.
 
 Описание класса оформляется блоком из трёх подряд `///`:
 
@@ -1408,65 +1354,108 @@ public:
 
 ## CS-09: Логирование
 
-Логирование организовано как **per-translation-unit** механизм: каждый `.cpp` файл, использующий логирование, определяет собственный логгер в анонимном namespace. Это даёт два важных свойства:
-
-1. Логгеры **не являются членами класса** — не загрязняют интерфейс, не участвуют в копировании/перемещении объектов и не привязаны к жизненному циклу инстансов.
-2. При выключении флага `APP_ENABLE_LOGGING` определения логгеров и вызовы макросов превращаются в `((void)0)`, и логирующий код полностью исчезает из бинарника.
-
-### Шаблон определения логгера
-
-В каждом `.cpp` файле, использующем логирование:
-
-```cpp
-#include "app/server/Server.hpp"
-
-#ifdef APP_ENABLE_LOGGING
-#include "app/logging/logging.hpp"
-namespace
-{
-inline const auto loggerConfig = MakeLoggerConfig(LogProfile::Default);
-inline const auto loggerContext = Logger::Context{
-    .appName = "app",
-    .moduleName = "server",
-};
-}  // namespace
-APP_DEFINE_LOGGER(loggerConfig, loggerContext)
-#endif
-
-namespace app::server
-{
-// ... реализация ...
-}  // namespace app::server
-```
-
-Анонимный namespace обязателен — он гарантирует, что логгер не вступит в конфликт с одноимёнными логгерами других `.cpp`.
+Логирование организовано через header-only библиотеку kvalog.
+Логгеры **не являются членами класса** — не загрязняют интерфейс, не участвуют в копировании/перемещении объектов и не привязаны к жизненному циклу инстансов.
 
 ### Имя модуля
 
-В `loggerContext.moduleName` записывается доменный путь модуля в нижнем регистре через `::` — например, `server`, `core::device`, `pipeline::chain`. Это позволяет фильтровать вывод по подсистеме при отладке.
+В `loggerContext.moduleName` записывается путь модуля в нижнем регистре через `::` — например, `server`, `core::device`, `pipeline::chain`. Это позволяет фильтровать вывод по подсистеме при отладке.
 
-### Макросы логирования
+### Создание логгера через профиль
 
-Все вызовы логгера идут только через макросы `APP_LOG_TRACE`, `APP_LOG_DEBUG`, `APP_LOG_INFO`, `APP_LOG_WARN`, `APP_LOG_ERROR`, `APP_LOG_CRITICAL`. Прямой вызов методов логгера запрещён.
-
-```cpp
-// Плохо: прямой вызов
-GetLogger().Info("Server started on port {}", port);
-
-// Хорошо: макрос
-APP_LOG_INFO("Server started on port {}", port);
-```
-
-### Условная компиляция
-
-Блок определения логгера **обязательно** обёрнут в `#ifdef APP_ENABLE_LOGGING`. При выключенном флаге макросы `APP_LOG_*` раскрываются в `((void)0)`, поэтому **сами вызовы макросов не нужно оборачивать в `#ifdef`** — они исчезают автоматически.
+Логгер создаётся фабричной функцией `kvalog::CreateLogger`, принимающей профиль (`kvalog::LogProfile`) и контекст (`kvalog::Logger::Context`). Контекст содержит имя приложения и имя модуля. Фабрика возвращает `kvalog::LoggerPtr` (`std::shared_ptr<Logger>`).
 
 ```cpp
-// Плохо: лишний guard на месте вызова
-#ifdef APP_ENABLE_LOGGING
-APP_LOG_INFO("Server started");
-#endif
+#include <kvalog/kvalog.hpp>
 
-// Хорошо: вызов всегда без guard'а
-APP_LOG_INFO("Server started");
+const auto context = kvalog::Logger::Context{
+    .appName = "Kvantized",
+    .moduleName = "core::device",
+};
+auto logger = kvalog::CreateLogger(kvalog::LogProfile::ColoredDefault, context);
 ```
+
+### Выбор профиля
+
+Профиль выбирается под назначение бинарника. По умолчанию — `ColoredDefault` для интерактивных запусков и `Json` для production-агрегации логов.
+
+| Профиль | Когда использовать |
+|---|---|
+| `Minimal` | Утилиты CLI, где требуется минимальный вывод |
+| `Default` | Стандартный вывод без меток времени |
+| `Detailed` | Локальная отладка с метками времени |
+| `Verbose` | Глубокая диагностика с PID/TID |
+| `ColoredDefault` | Интерактивная разработка в терминале |
+| `ColoredDetailed` | Интерактивная отладка с метками времени |
+| `ColoredVerbose` | Интерактивная глубокая диагностика |
+| `Json` | Production, сбор логов в агрегатор |
+
+### Вызов методов логирования
+
+Сообщения формируются `fmt`-style форматной строкой и вариативными аргументами. Source location получаются автоматически. Доступны шесть уровней — от `Trace` до `Critical`.
+
+```cpp
+logger->Trace("Entering pipeline stage '{}'", stage.Name());
+logger->Debug("Buffer size: {} bytes", buffer.size());
+logger->Info("Module '{}' initialized on port {}", module.Name(), port);
+logger->Warning("Cache miss rate: {:.1f}%", missRate);
+logger->Error("Failed to parse config: {}", err->Message());
+logger->Critical("Unrecoverable state: {}", state.Message());
+```
+
+Уровни используются по назначению, указанном в их названии: `Trace`/`Debug`, `Info`, `Warning`, `Error`, `Critical`.
+
+### Кастомная конфигурация
+
+Если ни один из профилей не подходит, конфигурация собирается через `kvalog::Logger::Config` и передаётся в `kvalog::Logger::Create`. Можно начать с профиля `kvalog::MakeProfileConfig` и точечно изменить нужные поля.
+
+```cpp
+auto config = kvalog::MakeProfileConfig(kvalog::LogProfile::Verbose);
+config.logFilePath = "/var/log/kvantized.log";
+config.fields.includeProcessId = false;
+config.fields.includeThreadId = false;
+
+const auto context = kvalog::Logger::Context{
+    .appName = "Kvantized",
+    .moduleName = "server",
+};
+auto logger = kvalog::Logger::Create(config, context);
+```
+
+Дочерний логгер с тем же конфигом, но другим контекстом, создаётся через `kvalog::Logger::WithConfigFrom`. Это поддерживает единый стиль вывода между подсистемами.
+
+```cpp
+const auto dbContext = kvalog::Logger::Context{
+    .appName = "Kvantized",
+    .moduleName = "core::database",
+};
+auto dbLogger = kvalog::Logger::WithConfigFrom(*logger, dbContext);
+```
+
+### Уровни логирования
+
+Минимальный уровень задаётся через `SetLevel`. Сообщения ниже установленного уровня отбрасываются без форматирования.
+
+```cpp
+logger->SetLevel(kvalog::LogLevel::Warning);
+```
+
+### Асинхронный режим
+
+Для высокочастотного логирования используется асинхронный режим: запись выполняется в фоновом потоке, что снимает накладные расходы.
+
+```cpp
+auto config = kvalog::MakeProfileConfig(kvalog::LogProfile::Json);
+config.asyncMode = kvalog::Logger::Mode::Async;
+config.asyncQueueSize = 16384;
+config.asyncThreadCount = 2;
+```
+
+### Завершение работы
+
+Перед завершением приложения обязательно вызывается `Flush()` — это гарантирует, что буферизованные сообщения (особенно в асинхронном режиме) будут записаны до выхода.
+
+```cpp
+logger->Flush();
+```
+
