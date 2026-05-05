@@ -71,6 +71,10 @@ class ${CLASS_NAME}
 public:
     /// [Fabric Methods]
 
+    /// @brief Config struct for object construction
+    struct Config {
+    };
+
     /// @brief Creates ${CLASS_NAME} instance with given configuration
     static std::tuple<${CLASS_NAME}Ptr, error> Create(const Config & config);
 
@@ -82,11 +86,14 @@ public:
     ${CLASS_NAME}(const ${CLASS_NAME} &) = delete;
     /// @brief Copy operator is deleted
     ${CLASS_NAME} & operator=(const ${CLASS_NAME} &) = delete;
+    /// @brief Move constructor
+    ${CLASS_NAME}(${CLASS_NAME} &&) = default;
+    /// @brief Move operator
+    ${CLASS_NAME} & operator=(${CLASS_NAME} &&) = default;
 
-    /// @brief Config struct for object construction
-    struct Config {
-    };
-
+    /// @brief Default constructor
+    /// @warning Avoid using this constructor since class has static fabric methods
+    ${CLASS_NAME}() = default;
     /// @brief Constructor
     /// @warning Avoid using this constructor since class has static fabric methods
     explicit ${CLASS_NAME}(const Config & config);
@@ -133,6 +140,10 @@ class ${CLASS_NAME}
 public:
     /// [Fabric Methods]
 
+    /// @brief Config struct for object construction
+    struct Config {
+    };
+
     /// @brief Creates ${CLASS_NAME} instance with given configuration
     static std::tuple<${CLASS_NAME}Ptr, error> Create(const Config & config);
 
@@ -144,11 +155,14 @@ public:
     ${CLASS_NAME}(const ${CLASS_NAME} &) = delete;
     /// @brief Copy operator is deleted
     ${CLASS_NAME} & operator=(const ${CLASS_NAME} &) = delete;
+    /// @brief Move constructor
+    ${CLASS_NAME}(${CLASS_NAME} &&) = default;
+    /// @brief Move operator
+    ${CLASS_NAME} & operator=(${CLASS_NAME} &&) = default;
 
-    /// @brief Config struct for object construction
-    struct Config {
-    };
-
+    /// @brief Default constructor
+    /// @warning Avoid using this constructor since class has static fabric methods
+    ${CLASS_NAME}() = default;
     /// @brief Constructor
     /// @warning Avoid using this constructor since class has static fabric methods
     explicit ${CLASS_NAME}(const Config & config);
