@@ -48,11 +48,13 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-avoid-non-const-global-variables,
   -modernize-concat-nested-namespaces,
+  -modernize-use-nodiscard,
   -misc-include-cleaner,
   -misc-non-private-member-variables-in-classes,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -cert-err58-cpp,
-  -cert-env33-c
+  -cert-env33-c,
+  -llvm-header-guard
 
 # -----------------------------------------------------------------------------
 # Warnings promoted to errors.
