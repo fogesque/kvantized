@@ -380,14 +380,12 @@ CheckOptions:
     value: 'camelBack'
 
   # --- CS-02: local `const` / `constexpr` — camelCase ------------------------
-  # Example from CODESTYLE.md: `constexpr auto maxSize = 1024;`.
+  # Example from codestyle.md: `constexpr auto maxSize = 1024;`.
   - key: readability-identifier-naming.LocalConstantCase
     value: 'camelBack'
   - key: readability-identifier-naming.LocalConstantPointerCase
     value: 'camelBack'
   - key: readability-identifier-naming.LocalPointerCase
-    value: 'camelBack'
-  - key: readability-identifier-naming.ConstexprVariableCase
     value: 'camelBack'
 
   # --- CS-06: global / namespace functions and variables — PascalCase --------
