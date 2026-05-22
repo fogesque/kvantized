@@ -20,7 +20,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: '1.26.3'
     
     - name: Install dependencies
       run: cd bots/weekly-message && go mod tidy
@@ -29,9 +29,7 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-        P_WP: ${{ secrets.P_WP }}
-        A_WP_EVEN: ${{ secrets.A_WP_EVEN }}
-        A_WP_ODD: ${{ secrets.A_WP_ODD }}
-        K_WP_EVEN: ${{ secrets.K_WP_EVEN }}
-        K_WP_ODD: ${{ secrets.K_WP_ODD }}
+        TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
+        TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
+        TRELLO_BOARD_ID: ${{ secrets.TRELLO_BOARD_ID }}
       run: cd bots/weekly-message && go run main.go
