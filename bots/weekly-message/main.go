@@ -1,73 +1,39 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
-	"os"
-	"time"
+	"net/http"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"kvantized-bot/internal/application/weeklymessage"
+	"kvantized-bot/internal/infrastructure/config"
+	"kvantized-bot/internal/infrastructure/telegram"
+	"kvantized-bot/internal/infrastructure/trello"
 )
 
 func main() {
-	// Get credentials from environment variables
-	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
-	channelID := os.Getenv("TELEGRAM_CHANNEL_ID")
-
-	if botToken == "" || channelID == "" {
-		log.Fatal("Missing required environment variables")
-	}
-
-	// Get schedule details from environment variables
-	pWp := os.Getenv("P_WP")
-	aWpEven := os.Getenv("A_WP_EVEN")
-	aWpOdd := os.Getenv("A_WP_ODD")
-	kWpEven := os.Getenv("K_WP_EVEN")
-	kWpOdd := os.Getenv("K_WP_ODD")
-
-	if pWp == "" || aWpEven == "" || aWpOdd == "" || kWpEven == "" || kWpOdd == "" {
-		log.Fatal("Missing required schedule environment variables")
-	}
-
-	// Create bot instance
-	bot, err := tgbotapi.NewBotAPI(botToken)
+	settings, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Get current week number (ISO 8601)
-	year, week := time.Now().ISOWeek()
+	board := trello.NewBoardClient(http.DefaultClient, trello.Credentials{
+		APIKey:  settings.TrelloAPIKey,
+		Token:   settings.TrelloToken,
+		BoardID: settings.TrelloBoardID,
+	})
 
-	// Determine the current week's schedule
-	var aWP, kWP string
-	if week%2 == 0 {
-		aWP = aWpEven
-		kWP = kWpEven
-	} else {
-		aWP = aWpOdd
-		kWP = kWpOdd
-	}
-
-	// Format the message
-	message := fmt.Sprintf(
-		"📅 *Week %d, year %d*\n\n"+
-			"Schedule for this week:\n"+
-			"P - %s\n"+
-			"A - %s\n"+
-			"K - %s\n",
-		week, year,
-		pWp, aWP, kWP,
-	)
-
-	// Create message config
-	msg := tgbotapi.NewMessageToChannel(channelID, message)
-	msg.ParseMode = "Markdown"
-
-	// Send the message
-	sentMsg, err := bot.Send(msg)
+	notifier, err := telegram.NewChannelNotifier(settings.TelegramBotToken, settings.TelegramChannelID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Message sent successfully! Message ID: %d", sentMsg.MessageID)
+	useCase := weeklymessage.NewSendTaskSummary(board, notifier, weeklymessage.TaskSummaryFormatter{})
+
+	messageID, err := useCase.Run(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Message sent successfully! Message ID: %d", messageID)
 }
